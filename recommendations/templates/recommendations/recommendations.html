@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sustainable Living Recommendations</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 250px;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1;
+            --active-link-bg: #34495e;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            z-index: 1000;
+        }
+
+        .sidebar-link {
+            color: var(--sidebar-text);
+            padding: 12px 15px;
+            display: block;
+            text-decoration: none;
+        }
+
+        .sidebar-link:hover, .sidebar-link.active {
+            background-color: var(--active-link-bg);
+        }
+
+        .content-wrapper {
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+        }
+
+        .recommendation-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .recommendation-card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-bar {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="p-4">
+            <h4 class="text-center mb-4">Sustainable Living</h4>
+            <nav>
+                <a href="{% url 'dashboard' %}" class="sidebar-link ">
+                    <i class="bi bi-grid"></i> Dashboard
+                </a>
+                <a href="{% url 'recommendations' %}" class="sidebar-link active">
+                    <i class="bi bi-list-check"></i> Recommendations
+                </a>
+                <a href="{% url 'saved' %}" class="sidebar-link">
+                    <i class="bi bi-tags"></i> Saved
+                </a>
+                <a href="{% url 'tracker' %}" class="sidebar-link">
+                    <i class="bi bi-graph-up"></i> Tracker
+                </a>
+                <a href="{% url 'settings' %}" class="sidebar-link">
+                    <i class="bi bi-gear"></i> Settings
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="content-wrapper">
+        <h1 class="mb-4">Recommendations</h1>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <input type="text" class="form-control" id="searchBar" placeholder="Search recommendations...">
+            <select id="categoryFilter" class="form-select">
+                <option value="">Filter by Category</option>
+                <option value="Lifestyle">Lifestyle</option>
+                <option value="Transportation">Transportation</option>
+                <option value="Food">Food</option>
+                <option value="Home">Home</option>
+                <option value="Shopping">Shopping</option>
+            </select>
+            <select id="difficultyFilter" class="form-select">
+                <option value="">Filter by Difficulty</option>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+            </select>
+            <select id="sortBy" class="form-select">
+                <option value="">Sort by</option>
+                <option value="carbonSaved">Carbon Saved</option>
+            </select>
+        </div>
+
+        <!-- Recommendations -->
+        <form id="csrfForm">
+            {% csrf_token %}
+        </form>
+        <div id="recommendationsContainer" class="row g-4">
+            {% for rec in recommendations %}
+            <div class="col-md-6 col-lg-4 recommendation-card" data-category="{{ rec.category }}" data-difficulty="{{ rec.difficulty }}" data-carbon-saved="{{ rec.carbon_saved }}" data-id="{{ rec.id }}">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ rec.title }}</h5>
+                        <p class="card-text">{{ rec.description }}</p>
+                        <p><strong>Carbon Saved:</strong> {{ rec.carbon_saved }} kg</p>
+                        <p><strong>Difficulty:</strong> {{ rec.difficulty }}</p>
+                        <p><strong>Impact:</strong> {{ rec.impact }}</p>
+                        <p><strong>Category:</strong> {{ rec.category }}</p>
+                        <div class="d-flex justify-content-between mt-3">
+                            <button class="btn btn-primary btn-sm saveBtn">Save</button>
+                            <!-- <button class="btn btn-success btn-sm completeBtn">Mark as Completed</button> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+            // Function to filter recommendations based on search input
+    const searchBar = document.getElementById('searchBar');
+    searchBar.addEventListener('input', () => {
+        const searchTerm = searchBar.value.toLowerCase(); // Get search term and convert to lowercase
+        const recommendations = document.querySelectorAll('.recommendation-card'); // Get all recommendation cards
+
+        recommendations.forEach(card => {
+            const title = card.querySelector('.card-title').textContent.toLowerCase(); // Get the title text
+            const description = card.querySelector('.card-text').textContent.toLowerCase(); // Get the description text
+
+            // Check if the search term is included in the title or description
+            if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                card.style.display = ''; // Show the card
+            } else {
+                card.style.display = 'none'; // Hide the card
+            }
+        });
+    });
+    // Function to filter recommendations based on category, difficulty, and sort by carbon saved
+    const categoryFilter = document.getElementById('categoryFilter');
+    // filter by category
+    
+    const difficultyFilter = document.getElementById('difficultyFilter');
+    const sortBy = document.getElementById('sortBy');
+    const recommendationsContainer = document.getElementById('recommendationsContainer');
+    const recommendations = Array.from(recommendationsContainer.getElementsByClassName('recommendation-card'));
+    
+        document.querySelectorAll('.saveBtn').forEach(button => {
+        button.addEventListener('click', () => {
+        const card = button.closest('.recommendation-card');
+        const recommendationId = card.getAttribute('data-id'); // Assuming `data-id` holds the recommendation ID
+
+        fetch('/save-recommendation/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken(),
+            },
+            body: JSON.stringify({ recommendation_id: recommendationId }),
+        })
+            .then(response => {
+                if (!response.ok) {
+                    // If the response status is not OK (e.g., 404, 500), throw an error
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // If success, update the UI and do not show any error message
+                    alert(data.message);
+                    button.textContent = 'Saved';
+                    button.disabled = true; // Disable the button after saving
+                } else {
+                    // Only show an error if the backend explicitly indicates a failure
+                    alert(data.error || 'An error occurred while saving.');
+                }
+            })
+            .catch(error => {
+                // Catch network or other errors
+                console.error('Fetch error:', error);
+                alert('An error occurred while processing your request.');
+            });
+        
+    });
+});
+// Helper function to get the CSRF token
+function getCSRFToken() {
+    const csrfTokenElement = document.querySelector('[name=csrfmiddlewaretoken]');
+    return csrfTokenElement ? csrfTokenElement.value : '';
+}
+
+
+// Function to filter and sort the recommendations
+const filterRecommendations = () => {
+    const searchTerm = searchBar.value.toLowerCase(); // Search term from the search bar
+    const selectedCategory = categoryFilter.value; // Selected category filter
+    const selectedDifficulty = difficultyFilter.value; // Selected difficulty filter
+    const sortByValue = sortBy.value; // Sorting option selected
+
+    // Filter recommendations based on the search term, category, and difficulty
+    recommendations.forEach(card => {
+        const title = card.querySelector('.card-title').textContent.toLowerCase();
+        const description = card.querySelector('.card-text').textContent.toLowerCase();
+        const category = card.getAttribute('data-category');
+        const difficulty = card.getAttribute('data-difficulty');
+        const carbonSaved = parseFloat(card.getAttribute('data-carbon-saved'));
+
+        // Check if the recommendation matches the search term, category, and difficulty
+        const matchesSearch = title.includes(searchTerm) || description.includes(searchTerm);
+        const matchesCategory = !selectedCategory || category === selectedCategory;
+        const matchesDifficulty = !selectedDifficulty || difficulty === selectedDifficulty;
+
+        if (matchesSearch && matchesCategory && matchesDifficulty) {
+            card.style.display = ''; // Show the card if it matches the filters
+        } else {
+            card.style.display = 'none'; // Hide the card if it doesn't match
+        }
+    });
+
+    // Sorting recommendations by carbon saved if the 'Sort by' option is selected
+    if (sortByValue === 'carbonSaved') {
+        recommendations.sort((a, b) => {
+            const carbonA = parseFloat(a.getAttribute('data-carbon-saved'));
+            const carbonB = parseFloat(b.getAttribute('data-carbon-saved'));
+            return carbonB - carbonA; // Sort in descending order
+        });
+
+        recommendations.forEach(card => recommendationsContainer.appendChild(card)); // Reorder the cards
+    }
+};
+
+// Event listener for the search bar
+searchBar.addEventListener('input', filterRecommendations);
+
+// Event listeners for the filter options (category, difficulty, and sort)
+categoryFilter.addEventListener('change', filterRecommendations);
+difficultyFilter.addEventListener('change', filterRecommendations);
+sortBy.addEventListener('change', filterRecommendations);
+
+// Initial call to display the filtered results when the page loads
+filterRecommendations();
+
+    </script>
+</body>
+</html>

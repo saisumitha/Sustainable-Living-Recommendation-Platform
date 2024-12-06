@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Recommendations - Sustainable Living</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 250px;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1;
+            --active-link-bg: #34495e;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar-link {
+            color: var(--sidebar-text);
+            padding: 12px 15px;
+            display: block;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar-link:hover, .sidebar-link.active {
+            background-color: var(--active-link-bg);
+        }
+
+        .content-wrapper {
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+        }
+
+        .recommendation-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .recommendation-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .category-filter {
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .category-filter:hover {
+            background-color: #e9ecef;
+        }
+
+        .impact-high { color: #2ecc71; }
+        .impact-medium { color: #f1c40f; }
+        .impact-low { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="p-4">
+            <h4 class="text-center mb-4">Sustainable Living</h4>
+            <nav>
+                <a href="{% url 'dashboard' %}" class="sidebar-link">
+                    <i class="bi bi-grid"></i> Dashboard
+                </a>
+                <a href="{% url 'recommendations' %}" class="sidebar-link">
+                    <i class="bi bi-list-check"></i> Recommendations
+                </a>
+                <a href="{% url 'saved' %}" class="sidebar-link active">
+                    <i class="bi bi-tags"></i> Saved
+                </a>
+                <a href="{% url 'tracker' %}" class="sidebar-link">
+                    <i class="bi bi-graph-up"></i> Tracker
+                </a>
+                <a href="{% url 'settings' %}" class="sidebar-link">
+                    <i class="bi bi-gear"></i> Settings
+                </a>
+                
+            </nav>
+        </div>
+    </div>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+        <!-- Header Section -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Saved Recommendations</h2>
+            <div class="d-flex gap-2">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search saved items..." id="searchInput">
+                    <button class="btn btn-outline-secondary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <form method="post" id="csrfTokenForm">
+            {% csrf_token %}
+        </form>
+        {% for saved in saved_recommendations %}
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ saved.recommendation.title }}</h5>
+                    <p class="card-text">{{ saved.recommendation.description }}</p>
+                    <p><strong>Carbon Saved:</strong> {{ saved.recommendation.carbon_saved }} kg</p>
+                    <p><strong>Category:</strong> {{ saved.recommendation.category }}</p>
+
+                    <!-- Progress Bar
+                    <div class="progress goal-progress mb-2">
+                        <div class="progress-bar bg-info" style="width: {{ saved_recommendation.progress }}%" role="progressbar"></div>
+                    </div> -->
+
+
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-success btn-sm completeBtn" data-id="{{ saved.id }}">Mark as Completed</button>
+                        <button class="btn btn-danger btn-sm removeBtn" data-id="{{ saved.id }}">Remove</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        
+        // Handle Remove Button
+        document.querySelectorAll('.removeBtn').forEach(button => {
+        button.addEventListener('click', () => {
+            const recommendationId = button.getAttribute('data-id');
+            fetch(`/remove_saved_recommendation/${recommendationId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.message) {
+                    alert(data.message); // Show success message
+
+                    // Remove the card from the page dynamically
+                    const card = button.closest('.card'); // Find the parent card element
+                    if (card) card.remove();
+                } else {
+                    alert('An error occurred: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+        // Handle Search Function for Saved Items
+        document.getElementById('searchInput').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase(); // Get the search term
+        const recommendationCards = document.querySelectorAll('.card'); // Get all cards
+
+        recommendationCards.forEach(card => {
+            const title = card.querySelector('.card-title').textContent.toLowerCase(); // Get the title of the recommendation
+            const description = card.querySelector('.card-text').textContent.toLowerCase(); // Get the description
+
+            // Show or hide the card based on the search term matching the title or description
+            if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                card.style.display = ''; // Show the card
+            } else {
+                card.style.display = 'none'; // Hide the card
+            }
+        });
+    });
+
+    // CSRF Token Function
+    function getCSRFToken() {
+        const csrfTokenElement = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (!csrfTokenElement) {
+            console.error('CSRF token not found. Ensure {% csrf_token %} is included in your template.');
+            return ''; // Return an empty string if the CSRF token isn't found
+        }
+        return csrfTokenElement.value;
+    }
+
+    document.querySelectorAll('.completeBtn').forEach(button => {
+    button.addEventListener('click', () => {
+        const recommendationId = button.getAttribute('data-id');
+
+        // Send POST request to mark as completed
+        fetch('/mark_as_completed/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value  // CSRF token
+            },
+            body: `recommendation_id=${recommendationId}`
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Marked as completed!');
+                // Optionally update the UI to reflect the change
+            } else {
+                alert('Failed to mark as completed.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    });
+});
+
+        // CSRF Token
+        function getCSRFToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+    </script>
+</body>
+</html>

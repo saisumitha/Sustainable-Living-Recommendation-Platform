@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sustainable Living Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/main.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 250px;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1;
+            --active-link-bg: #34495e;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar-link {
+            color: var(--sidebar-text);
+            padding: 12px 15px;
+            display: block;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar-link:hover, .sidebar-link.active {
+            background-color: var(--active-link-bg);
+        }
+
+        .content-wrapper {
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+        }
+
+        .dashboard-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        #userActivityChart, #carbonFootprintChart {
+            max-height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="p-4">
+            <h4 class="text-center mb-4">Sustainable Living</h4>
+            <nav>
+                <a href="{% url 'dashboard' %}" class="sidebar-link active">
+                    <i class="bi bi-grid"></i> Dashboard
+                </a>
+                <a href="{% url 'recommendations' %}" class="sidebar-link">
+                    <i class="bi bi-list-check"></i> Recommendations
+                </a>
+                <a href="{% url 'saved' %}" class="sidebar-link">
+                    <i class="bi bi-tags"></i> Saved
+                </a>
+                <a href="{% url 'tracker' %}" class="sidebar-link">
+                    <i class="bi bi-graph-up"></i> Tracker
+                </a>
+                <a href="{% url 'settings' %}" class="sidebar-link">
+                    <i class="bi bi-gear"></i> Settings
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+        <div class="row">
+            <!-- User Activity Chart -->
+            <div class="col-md-8">
+                <div class="card dashboard-card">
+                    <div class="card-header">This is How your Activity should be For Successful Progress</div>
+                    <div class="card-body">
+                        <canvas id="userActivityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats (Sustainability Impact) -->
+            <div class="col-md-4">
+                <div class="card dashboard-card">
+                    <div class="card-header">Sustainability Impact</div>
+                    <div class="card-body">
+                        <!-- Carbon Reduced -->
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Carbon Reduced</span>
+                            <strong>{{ total_carbon_reduced }} kg CO2</strong>
+                        </div>
+
+                        <!-- Completed Recommendations -->
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Recommendations Completed</span>
+                            <strong>{{ completed_recommendations }}/{{ total_recommendations }}</strong>
+                        </div>
+
+                        <!-- Total Categories -->
+                        <div class="d-flex justify-content-between">
+                            <span>Total Categories</span>
+                            <strong>{{ categories.count }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="col-md-8">
+                <div class="card dashboard-card">
+                    <div class="card-header">Carbon Footprint Tracker</div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Total Carbon Reduced</span>
+                            <strong>{{ total_carbon_reduced }} kg CO2</strong>
+                        </div>
+                        <canvas id="carbonFootprintChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Environmental Calendar -->
+            <div class="col-md-4">
+                <div class="card dashboard-card">
+                    <div class="card-header">Environmental Dates</div>
+                    <div class="card-body">
+                        <div id="environmentCalendar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card dashboard-card">
+                    <div class="card-header">Manage Recommendations</div>
+                    <div class="card-body">
+                        {% for recommendation in recommendations %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <strong>{{ recommendation.title }}</strong>
+                                    <span class="badge bg-info ms-2">{{ recommendation.category.name }}</span>
+                                </div>
+                                <span class="badge bg-success">{{ recommendation.impact }}</span>
+                            </div>
+                        {% empty %}
+                            <div class="alert alert-info text-center">
+                                <a href="{% url 'recommendations' %}" class="btn btn-primary">Create your first recommendation</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card dashboard-card">
+                    <div class="card-header">Manage Categories</div>
+                    <div class="card-body">
+                        {% if categories %}
+                            {% for category in categories %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong>{{ category.name }}</strong>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-center text-muted">No categories available</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/main.min.js"></script>
+    <script>
+        // User Activity Chart
+        const userActivityCtx = document.getElementById('userActivityChart').getContext('2d');
+        new Chart(userActivityCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'User Sustainability Actions',
+                    data: [10, 20, 30, 40, 50, 60],
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            }
+        });
+
+        // Carbon Footprint Chart
+        const carbonFootprintCtx = document.getElementById('carbonFootprintChart').getContext('2d');
+       
+
+        // Data passed from Django view
+        const monthLabels = JSON.parse('{{ months|escapejs }}');  // Parse the JSON string
+        const carbonData = JSON.parse('{{ carbon_savings|escapejs }}');  // Parse the JSON string
+
+        new Chart(carbonFootprintCtx, {
+            type: 'line',
+            data: {
+                labels: monthLabels,  // Dynamic month labels from saved_at
+                datasets: [{
+                    label: 'Carbon Footprint',
+                    data: carbonData,  // Carbon savings data from recommendations
+                    fill: false,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    tension: 0.1
+                }]
+            }
+        });
+
+        // FullCalendar
+        const calendarEl = document.getElementById('environmentCalendar');
+        new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            events: [
+                { title: 'Earth Day', date: '2024-04-22' },
+                { title: 'World Environment Day', date: '2024-06-05' }
+            ]
+        }).render();
+    </script>
+</body>
+</body>
+</html>

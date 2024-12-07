@@ -1,15 +1,10 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.http import JsonResponse
 from .models import UserProfile, Recommendation, Category, SavedRecommendation, CompletedRecommendation
 from .forms import RegisterForm
-from django.db.models import Sum
-from django.db.models.functions import TruncMonth
 import json
 from django import forms
 from django.shortcuts import get_object_or_404
@@ -17,8 +12,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django.contrib.auth.views import PasswordChangeView
-from django.urls import reverse_lazy
+
 
 # Registration View
 def register(request):
@@ -97,7 +91,7 @@ def recommendations(request):
 def profile(request):
     return render(request, 'profile.html', {'user': request.user})
 
-
+@login_required
 def saved(request):
     if request.method == 'POST':
         try:
@@ -258,11 +252,6 @@ def remove_saved_recommendation(request, id):
     
 
 
-
-from django.shortcuts import render
-from recommendations.models import Recommendation
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 def recommend_based_on_search(request):
     # Get user preferences from the search bar (query parameters)

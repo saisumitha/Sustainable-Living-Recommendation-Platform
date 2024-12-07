@@ -213,24 +213,8 @@ def mark_as_completed(request):
         return JsonResponse({'success': True, 'message': message})
     else:
         return JsonResponse({'error': 'Invalid request method. Only POST is allowed.'}, status=405)
-  # If not POST, redirect back to tracker
 
 
-# class UserPreferencesForm(forms.ModelForm):
-#     class Meta:
-#         model = UserProfile
-#         fields = ['preferences']
-#         widgets = {
-#             'preferences': forms.Textarea(attrs={'rows': 5, 'cols': 40}),
-#         }
-
-#     def clean_preferences(self):
-#         import json
-#         preferences = self.cleaned_data['preferences']
-#         try:
-#             return json.loads(preferences)
-#         except json.JSONDecodeError as e:
-#             raise forms.ValidationError("Invalid JSON format. Please check your input.")
 
 class UserProfileForm(forms.ModelForm):
     bio = forms.CharField(
@@ -261,7 +245,7 @@ def save_recommendation(request):
 
 
 @csrf_exempt  # Allow CSRF-exempt for this view, since you are sending the CSRF token in the header
-@require_http_methods(["DELETE"])
+@require_http_methods(["DELETE"]) # Only allow DELETE requests
 def remove_saved_recommendation(request, id):
     try:
         # Get the saved recommendation by its ID
